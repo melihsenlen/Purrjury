@@ -47,6 +47,7 @@ class PathSettings:
     openers: int = 1              # the most clues allowed to work with nothing known
     given: bool = False           # easy puzzles: the first cat on the path is shown from the start
     tries_per_step: int = 300     # random statements to try before giving up on a step
+    clue_types: tuple = None      # the statement types to use, None for all of them (ALL_STATEMENTS)
 
 
 def generate_path_puzzle(rows, cols, n_liars, settings=PathSettings(), max_attempts=50):
@@ -166,7 +167,7 @@ def find_clue_for_step(grid, world, known, target, may_open, settings, plan):
     used = used_keys(grid)
     for _ in range(settings.tries_per_step):
         speaker = random.choice(free)
-        statement = random.choice(ALL_STATEMENTS).random(speaker, grid, world)
+        statement = random.choice(settings.clue_types or ALL_STATEMENTS).random(speaker, grid, world)
         if statement is None or statement.key() in used or kind_full(statement, grid):
             continue
         found = forced_cats([statement], known, grid)
@@ -194,7 +195,7 @@ def fill_remaining(grid, world, settings, plan):
             if cat.statement is not None:
                 continue
             for _ in range(settings.tries_per_step):
-                statement = random.choice(ALL_STATEMENTS).random(cat.index, grid, world)
+                statement = random.choice(settings.clue_types or ALL_STATEMENTS).random(cat.index, grid, world)
                 if statement is None or statement.key() in used or kind_full(statement, grid):
                     continue
                 if not forced_cats([statement], {}, grid) and plan.allows(statement):

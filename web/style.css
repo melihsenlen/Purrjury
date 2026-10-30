@@ -159,28 +159,26 @@ button:hover { border-color: var(--muted); }
 }
 .note-done { align-self: flex-end; padding: 4px 12px; }
 
-/* connections (right click or long-press a cat) */
-:root { --by: #e08a1e; --about: #2f6fdb; }
-/* only the names change color, so the rest of the page stays calm */
+:root { --about: #2f6fdb; }   /* the blue tag chip */
+
+/* connections (right click or long-press a cat): the names involved grow for a moment (from their middle,
+   so they grow both ways) and stay bold while it lasts, and the connected cats do one hop.
+   The chosen cat's name is underlined. The label under the nav says which way it goes ("cats that talk about Bean"). */
 .card.focus .name { text-decoration: underline; text-underline-offset: 3px; }
-.card.talked-by .name { color: var(--by); }
-.card.talks-about .name { color: var(--about); }
-/* the highlighted names pop up for a moment so you notice them */
 .card.focus .name, .card.talked-by .name, .card.talks-about .name {
   display: inline-block;
-  transform-origin: left center;
-  animation: pop 0.45s ease-in-out;
+  transform-origin: center;
+  font-weight: 800;
+  animation: name-grow 0.45s ease-out;
 }
-@keyframes pop {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.35); }
-  75% { transform: scale(1.35); }   /* hold for a moment, then snap back quickly */
-  100% { transform: scale(1); }
+@keyframes name-grow { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.35); } }
+.card.talked-by .sprite, .card.talks-about .sprite { animation: hop 0.5s ease-out; }   /* hop: see the guide cat */
+@media (prefers-reduced-motion: reduce) {
+  .card.talked-by .sprite, .card.talks-about .sprite, .card .name { animation: none; }
 }
 #legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: 1.6em; margin: 0 0 10px; }
 .tag { font-size: 0.8rem; font-weight: 600; }
-.tag-by { color: var(--by); }
-.tag-about { color: var(--about); }
+.tag-by, .tag-about { color: var(--ink); }
 
 /* hint: dashed outline around the clues you can use right now */
 :root { --hint: #c98a12; }
@@ -216,6 +214,8 @@ button:hover { border-color: var(--muted); }
 /* the guide cat on the left, its speech bubble on the right with a little tail pointing at it */
 #lesson { --bubble: #fff4d6; display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 800px; margin: 0 auto 8px; }
 #lesson .guide { width: 128px; height: 128px; image-rendering: pixelated; flex: none; }
+/* short computer screens: a smaller guide, so the lesson box is only as tall as the bubble and the grid gets the rest */
+@media (min-width: 601px) and (max-height: 800px) { #lesson .guide { width: 96px; height: 96px; } }
 /* warm yellow, so it stands out from the white cards */
 #lesson .bubble {
   position: relative; flex: 1; padding: 12px 18px;
@@ -294,8 +294,16 @@ button:hover { border-color: var(--muted); }
   @container (min-height: 200px) {
     #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .sprite { width: 128px; height: 128px; }
   }
-  /* very short cards: a smaller cat */
-  @container (max-height: 84px) {
+  /* shorter cards: a smaller cat, so its name and color still fit under it
+     (the 96px cat needs about 137px with them, the 64px one 104px) */
+  @container (max-height: 136px) {
+    #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .sprite { width: 64px; height: 64px; }
+  }
+  /* very short cards: a small cat (4x4 names are smaller, so their 64px cat fits down to 100px) */
+  @container (max-height: 103px) {
+    #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .sprite { width: 32px; height: 32px; }
+  }
+  @container (max-height: 100px) {
     .sprite { width: 32px; height: 32px; }
   }
   /* the notes box opens below the card, on top of the next one */

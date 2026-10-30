@@ -19,6 +19,7 @@
 
   <!-- first screen: pick a grid size and a difficulty -->
   <section id="menu">
+    <button id="how-to-play">How to play</button>
     <h2>Grid size</h2>
     <div class="choice" id="sizes"></div>
     <h2>Difficulty</h2>
@@ -32,6 +33,9 @@
     <span id="info"></span>
     <button id="next" title="Next puzzle (right arrow)">&rarr;</button>
   </nav>
+
+  <!-- the lesson's title, what to do and feedback, only in "How to play" -->
+  <div id="lesson" hidden></div>
 
   <p id="legend"></p>
 
@@ -59,6 +63,7 @@
 
   <script>
     document.write(`<script src="puzzles.js?v=${VERSION}"><\/script>`);
+    document.write(`<script src="tutorial.js?v=${VERSION}"><\/script>`);
     document.write(`<script src="game.js?v=${VERSION}"><\/script>`);
   </script>
 </body>

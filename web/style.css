@@ -201,6 +201,20 @@ button:hover { border-color: var(--muted); }
 .level-tricky .level-name { color: #7a4fc4; }
 [hidden] { display: none !important; }
 
+/* "How to play": the button on the menu, and the box above a lesson's grid */
+#how-to-play { font-weight: 600; padding: 8px 18px; }
+#lesson { max-width: 640px; margin: 0 auto 8px; text-align: center; }
+#lesson h2 { font-size: 1.1rem; margin: 4px 0; }
+#lesson p { margin: 4px 0; }
+.lesson-tasks { list-style: none; padding: 0; margin: 6px 0; font-size: 0.9rem; color: var(--muted); }
+.lesson-tasks li::before { content: "\25CB  "; }                  /* an empty circle */
+.lesson-tasks li.done { color: var(--honest); }
+.lesson-tasks li.done::before { content: "\2713  "; }             /* a check mark once tried */
+.lesson-feedback { min-height: 1.4em; font-weight: 600; }
+.lesson-feedback.wrong { color: var(--liar); }
+.lesson-feedback.solved { color: var(--honest); }
+.lesson-feedback button { margin-left: 6px; font-weight: 600; }
+
 #timer { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 3em; }
 #message { text-align: center; min-height: 1.5em; font-weight: 600; }
 
@@ -276,6 +290,8 @@ button:hover { border-color: var(--muted); }
     height: calc(100dvh - 50px);
     grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
   }
+  /* lessons have tiny grids: each row gets the height it would have in a 3x3, not the whole screen */
+  body.in-lesson #grid { height: calc((100dvh - 50px) * var(--rows) / 3); }
   /* the hint / connections label floats over the grid instead of taking a row */
   #legend {
     position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 20; width: max-content; max-width: calc(100% - 20px);

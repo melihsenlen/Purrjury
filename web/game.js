@@ -1,4 +1,5 @@
-// Purrjury web prototype. PUZZLES comes from puzzles.js (made by export.py).
+// Purrjury web prototype. PUZZLES comes from puzzles.js (made by export.py),
+// LESSONS (the "How to play" tutorial) from tutorial.js (made by tutorial.py).
 
 // colors whose sprite has another name (same as SPRITE_COAT in purrjury/board/colors.py)
 const SPRITE_COAT = { orange: "ginger", yellow: "golden" };
@@ -26,11 +27,19 @@ function freshState(p) {
     notes: p.cats.map(() => ""),   // your own note for every cat
     tags: p.cats.map(() => []),    // ids from TAGS
     checks: 0, wrongChecks: 0, hints: 0, seconds: 0, solved: false, revealed: false,
+    tried: {},   // lessons: the tools you've tried, e.g. { used: true }
   };
 }
 
+// The lessons are played like puzzles: they go after the real puzzles in one list.
+// LESSONS is missing if an old cached page loads without tutorial.js, then there's just no tutorial.
+const LESSON_LIST = typeof LESSONS !== "undefined" ? LESSONS : [];
+const ALL_PUZZLES = PUZZLES.concat(LESSON_LIST.map(lesson => lesson.puzzle));
+const FIRST_LESSON = PUZZLES.length;   // ALL_PUZZLES[FIRST_LESSON + k] is lesson k
+const SEEN_KEY = "purrjury-tutorial-seen";   // in localStorage once the tutorial has been opened
+
 // progress for every puzzle, so you can switch back and forth without losing it
-const states = PUZZLES.map(freshState);
+const states = ALL_PUZZLES.map(freshState);
 
 let list = [];               // indexes into PUZZLES of the size and level picked in the menu
 let current = 0;             // position in list
@@ -54,10 +63,14 @@ const menu = document.getElementById("menu");
 const game = document.getElementById("game");
 const sizeButtons = document.getElementById("sizes");
 const levelButtons = document.getElementById("levels");
+const lessonBox = document.getElementById("lesson");
+const hintButton = document.getElementById("hint");
 
 
-function puzzle() { return PUZZLES[list[current]]; }
+function puzzle() { return ALL_PUZZLES[list[current]]; }
 function state() { return states[list[current]]; }
+// the lesson being played, or null in a normal puzzle
+function lesson() { return list[current] >= FIRST_LESSON ? LESSON_LIST[list[current] - FIRST_LESSON] : null; }
 function sizeOf(p) { return `${p.rows}x${p.cols}`; }
 function levelOf(p) { return p.level || "unrated"; }
 
@@ -120,6 +133,79 @@ function start(indexes) {
 }
 
 
+// the "How to play" lessons, from the first one you haven't finished
+function startTutorial() {
+  try { localStorage.setItem(SEEN_KEY, "1"); } catch {}   // storage can be blocked, the tutorial still works
+  start(LESSON_LIST.map((_, k) => FIRST_LESSON + k));
+}
+
+
+// the box above a lesson's grid: title, what to do, the tools to try, and feedback on your marks
+function renderLesson() {
+  const l = lesson();
+  document.body.classList.toggle("in-lesson", l !== null);
+  hintButton.textContent = l?.steps ? "Next step" : "Hint";
+  lessonBox.hidden = l === null;
+  if (!l) return;
+  const s = state();
+
+  lessonBox.innerHTML = "";
+  const title = document.createElement("h2");
+  title.textContent = l.title;
+  const intro = document.createElement("p");
+  intro.textContent = l.intro;
+  lessonBox.append(title, intro);
+
+  if (l.tasks) {
+    const tasks = document.createElement("ul");
+    tasks.className = "lesson-tasks";
+    l.tasks.forEach(task => {
+      const item = document.createElement("li");
+      item.textContent = task.text;
+      if (s.tried[task.id]) item.classList.add("done");
+      tasks.append(item);
+    });
+    lessonBox.append(tasks);
+  }
+
+  // why a mark is wrong (lessons 1 to 3 explain it), or the lesson's ending once it's solved
+  const feedback = document.createElement("p");
+  feedback.className = "lesson-feedback";
+  if (s.solved) {
+    feedback.classList.add("solved");
+    feedback.textContent = l.done;
+    const next = document.createElement("button");
+    const last = current === list.length - 1;
+    next.textContent = last ? "Back to the menu" : "Next lesson →";
+    next.addEventListener("click", () => last ? showMenu() : go(1));
+    feedback.append(" ", next);
+  } else {
+    const p = puzzle();
+    const wrong = s.marks.findIndex((mark, i) => mark !== "unknown" && (mark === "liar") !== p.liars[i]);
+    if (wrong !== -1) {
+      feedback.classList.add("wrong");
+      feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
+    }
+  }
+  lessonBox.append(feedback);
+}
+
+
+// in a lesson, the puzzle is solved as soon as every mark is right (no Check needed)
+function checkLesson() {
+  const p = puzzle();
+  const s = state();
+  if (!lesson() || s.solved || s.revealed) return;
+  if (s.marks.every((mark, i) => (mark === "liar") === p.liars[i] && mark !== "unknown")) s.solved = true;
+}
+
+
+// lessons: remember that a tool was tried, so its line gets a check mark
+function tried(tool) {
+  if (lesson()) state().tried[tool] = true;
+}
+
+
 // --- Game ---
 
 
@@ -128,7 +214,10 @@ function render() {
   const s = state();
 
   const level = levelOf(p);
-  info.textContent = `${level[0].toUpperCase() + level.slice(1)} ${sizeOf(p)} · ${current + 1} / ${list.length}`;
+  info.textContent = lesson()
+    ? `How to play · ${current + 1} / ${list.length}`
+    : `${level[0].toUpperCase() + level.slice(1)} ${sizeOf(p)} · ${current + 1} / ${list.length}`;
+  renderLesson();
   info.title = `seed ${p.seed}`;   // handy when someone reports a puzzle
   grid.dataset.cols = p.cols;   // lets the CSS shrink the clue text on narrow 4x4 cards
   grid.style.setProperty("--cols", p.cols);
@@ -210,6 +299,7 @@ function render() {
     usedToggle.addEventListener("click", event => {
       event.stopPropagation();   // don't also change the mark
       s.used[i] = !s.used[i];
+      tried("used");
       render();
     });
 
@@ -222,6 +312,7 @@ function render() {
     pen.addEventListener("click", event => {
       event.stopPropagation();   // don't also change the mark
       editing = editing === i ? null : i;
+      tried("notes");
       render();
     });
 
@@ -360,6 +451,7 @@ function cycleMark(i) {
   s.marks[i] = MARKS[next];
   message.textContent = "";
   clearHint();   // the hint was for the old marks
+  checkLesson();
   render();
 }
 
@@ -367,6 +459,7 @@ function cycleMark(i) {
 function showConnections(i, mode = "by") {
   const cat = puzzle().cats[i];
   clearHint();
+  tried("connections");
   highlight = i;
   highlightMode = mode;
   // small colored label so you know what the color means
@@ -435,6 +528,9 @@ function reveal() {
 
 
 function go(step) {
+  // the lessons go in order: no wrapping around, and past the last one is the menu
+  if (lesson() && current + step >= list.length) return showMenu();
+  if (lesson() && current + step < 0) return;
   highlight = null;
   editing = null;
   hintCards.clear();
@@ -483,6 +579,7 @@ function hint() {
   const s = state();
   if (s.solved || s.revealed) return;
   clearConnections();
+  if (lesson()?.steps) return nextStep();
 
   // only marks that are right count as known, so a wrong mark can't send the hint the wrong way
   const known = new Map();
@@ -527,6 +624,24 @@ function hint() {
 }
 
 
+// the last lesson has only one way through, so its help can name the clue and the cat it gives:
+// the first step whose cat isn't marked right yet
+function nextStep() {
+  const p = puzzle();
+  const s = state();
+  const step = lesson().steps.find(st => (s.marks[st.cat] === "liar") !== p.liars[st.cat] || s.marks[st.cat] === "unknown");
+  if (!step) return;
+  s.hints++;
+  hintCards = new Set([step.speaker]);
+  legend.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "tag tag-hint";
+  tag.textContent = step.text;
+  legend.append(tag);
+  render();
+}
+
+
 function clearHint() {
   if (hintCards.size === 0) return;
   hintCards.clear();
@@ -558,6 +673,7 @@ document.getElementById("reset").addEventListener("click", reset);
 document.getElementById("reveal").addEventListener("click", reveal);
 document.getElementById("hint").addEventListener("click", hint);
 document.getElementById("menu-button").addEventListener("click", showMenu);
+document.getElementById("how-to-play").addEventListener("click", startTutorial);
 document.addEventListener("keydown", event => {
   if (game.hidden) return;
   // while typing a note, the arrow keys move the cursor, and Escape closes the note
@@ -580,4 +696,8 @@ if (versionLine && typeof PUZZLES_MADE !== "undefined") {
   versionLine.textContent = "Puzzles made " + PUZZLES_MADE;
 }
 
-showMenu();
+// the first visit starts with the tutorial, after that it's behind the "How to play" button
+let seenTutorial = true;
+try { seenTutorial = localStorage.getItem(SEEN_KEY) === "1"; } catch {}
+if (!seenTutorial && LESSON_LIST.length) startTutorial();
+else showMenu();

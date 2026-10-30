@@ -189,17 +189,26 @@ function renderLesson() {
     feedback.append(l.done, " ", nextButton(current === list.length - 1));
   } else {
     const p = puzzle();
-    const wrong = s.marks.findIndex((mark, i) => mark !== "unknown" && (mark === "liar") !== p.liars[i]);
-    // the cats this one's answer builds on (lesson.after) that aren't solved yet: start there instead
-    const first = (l.after?.[wrong] ?? []).filter(cat => s.marks[cat] !== (p.liars[cat] ? "liar" : "honest"));
-    if (wrong !== -1 && first.length) {
-      const names = first.map(cat => p.cats[cat].name).join(" and ");
-      feedback.classList.add("wrong");
-      feedback.textContent = `Start with ${names} first: ${p.cats[wrong].name}'s answer comes from ${names}'s clue.`;
-      guidePoints = new Set(first);   // and those cats pulse
-    } else if (wrong !== -1) {
+    const right = cat => s.marks[cat] === (p.liars[cat] ? "liar" : "honest");
+    // the cats this one's answer builds on (lesson.after) that aren't solved yet
+    const unsolved = cat => (l.after?.[cat] ?? []).filter(c => !right(c));
+    // a wrong mark you can already fix, then a mark (right or wrong) made before the cats it builds on
+    const wrong = s.marks.findIndex((mark, i) => mark !== "unknown" && !right(i) && !unsolved(i).length);
+    const early = s.marks.findIndex((mark, i) => mark !== "unknown" && unsolved(i).length);
+    // a cat that's ready now: the cats it builds on are solved and it has no mark yet (lesson.next)
+    const ready = Object.keys(l.next ?? {}).map(Number).find(cat => s.marks[cat] === "unknown" && !unsolved(cat).length);
+    if (wrong !== -1) {
       feedback.classList.add("wrong");
       feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
+    } else if (early !== -1) {
+      const first = unsolved(early);
+      const names = first.map(cat => p.cats[cat].name).join(" and ");
+      feedback.classList.add("wrong");
+      feedback.textContent = `Start with ${names} first: ${p.cats[early].name}'s answer comes from ${names}'s clue.`;
+      guidePoints = new Set(first);   // and those cats pulse
+    } else if (ready !== undefined) {
+      feedback.textContent = l.next[ready];
+      guidePoints = new Set([ready]);
     }
   }
   bubble.append(feedback);
@@ -225,6 +234,7 @@ function keepTallest(bubble, feedback, l) {
   const cats = puzzle().cats;
   const options = [
     ...Object.values(l.why ?? {}).map(text => [text]),
+    ...Object.values(l.next ?? {}).map(text => [text]),
     ...Object.entries(l.after ?? {}).map(([cat, first]) => {
       const names = first.map(c => cats[c].name).join(" and ");
       return [`Start with ${names} first: ${cats[cat].name}'s answer comes from ${names}'s clue.`];

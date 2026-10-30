@@ -25,7 +25,7 @@ from dataclasses import dataclass
 
 from purrjury.board.grid import get_cat, load_names, make_grid
 from purrjury.board.world import make_world
-from purrjury.engine.generator import add_cat_sounds
+from purrjury.engine.generator import add_cat_sounds, vary_wordings
 from purrjury.engine.solver import forced_cats, solve
 from purrjury.statements import ALL_STATEMENTS
 
@@ -73,6 +73,7 @@ def generate_path_puzzle(rows, cols, n_liars, settings=PathSettings(), max_attem
         steps = solve(grid, given)
         if check_puzzle(grid, steps, settings, given):
             add_cat_sounds(grid)
+            vary_wordings(grid)
             return grid, world, steps, given
     return None
 

@@ -52,3 +52,35 @@ def test_moods():
     assert PairStatement(0, 1, 2, "both_liars").mood() == "angry"
     assert PairStatement(0, 1, 2, "both_honest").mood() == "happy"
     assert PairStatement(0, 1, 2, "same").mood() == "neutral"
+
+
+def test_vary_wordings_never_repeats_a_pun_or_a_sound(monkeypatch):
+    """With a sound on every clue and many "is honest" clues, the pass still leaves no pun and no sound twice."""
+    import re
+    from purrjury import texts
+    from purrjury.engine import generator
+    monkeypatch.setattr(generator, "SOUND_CHANCE", 1.0)
+    puns = [re.sub(r"\{\w+\}", "", w) for wordings in generator._wording_lists() for w in wordings[1:]]
+    sounds = [s for mood in texts.CAT_SOUNDS.values() for s in mood]
+    for _ in range(30):
+        grid = random_grid(4, 4)
+        world = make_world(16, 5)
+        assign_statements(grid, world)
+        generator.add_cat_sounds(grid)
+        before = [cat.statement.key() for cat in all_cats(grid)]
+        generator.vary_wordings(grid)
+        read = [cat.statement.text for cat in all_cats(grid) if not cat.hidden]
+        for piece in puns + sounds:
+            assert sum(piece in text for text in read) <= 1, piece
+        assert [cat.statement.key() for cat in all_cats(grid)] == before   # the logic didn't change
+
+
+def test_vary_wordings_keeps_the_names():
+    from purrjury.engine import generator
+    grid = random_grid(1, 3)
+    for cat, about in zip(grid[0], ["Bean", "Cleo", "Dot"]):
+        cat.statement = type("Clue", (), {})()
+        cat.statement.text = f"{about} is honest, fur real."
+    generator.vary_wordings(grid)
+    assert [cat.statement.text for cat in grid[0]] == [
+        "Bean is honest, fur real.", "Cleo is pawsitively honest.", "Dot is honest. That's a purr-fact."]

@@ -68,6 +68,11 @@ const LESSONS = [
    "0": "If Ash were honest, Ash's clue would be true, and then Ash would be a liar. So Ash is a liar.",
    "1": "Ash is a liar, so Ash's clue is false: at least one of them is honest. That's Bean."
   },
+  "after": {
+   "1": [
+    0
+   ]
+  },
   "done": "That's the whole trick: a liar's clue is always false.",
   "puzzle": {
    "rows": 1,
@@ -129,6 +134,11 @@ const LESSONS = [
   "why": {
    "1": "Ash is honest, so Bean is a liar.",
    "2": "Bean is a liar, so Bean's clue is false: Cleo is a liar too."
+  },
+  "after": {
+   "2": [
+    1
+   ]
   },
   "done": "That's chaining: every cat you solve tells you how to read its clue.",
   "puzzle": {

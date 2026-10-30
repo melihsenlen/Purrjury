@@ -71,6 +71,8 @@ def lesson_liar():
             0: "If Ash were honest, Ash's clue would be true, and then Ash would be a liar. So Ash is a liar.",
             1: "Ash is a liar, so Ash's clue is false: at least one of them is honest. That's Bean.",
         },
+        # Bean's why line builds on Ash: tapping Bean first makes the guide say to start with Ash
+        "after": {1: [0]},
         "done": "That's the whole trick: a liar's clue is always false.",
     }
 
@@ -88,6 +90,7 @@ def lesson_chain():
             1: "Ash is honest, so Bean is a liar.",
             2: "Bean is a liar, so Bean's clue is false: Cleo is a liar too.",
         },
+        "after": {2: [1]},
         "done": "That's chaining: every cat you solve tells you how to read its clue.",
     }
 

@@ -25,6 +25,16 @@ def test_why_lines_cover_every_cat_you_can_get_wrong_in_the_first_lessons():
         assert set(lesson["why"]) == {cat for cat in cats if cat not in given}
 
 
+def test_after_points_at_other_cats_that_are_not_given():
+    """lesson["after"]: a why line builds on other cats, which the player has to solve first (so not given ones)."""
+    for maker in (lesson_honest, lesson_liar, lesson_chain):
+        grid, _world, given, lesson = maker()
+        for cat, first in lesson.get("after", {}).items():
+            assert cat in lesson["why"]
+            assert first and cat not in first
+            assert not set(first) & set(given)
+
+
 def test_tools_lesson_lists_the_three_tools(lessons):
     assert [task["id"] for task in lessons[3]["tasks"]] == ["used", "notes", "connections"]
 

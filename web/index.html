@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Purrjury</title>
-  <link rel="stylesheet" href="style.css">
+  <!-- every file gets a new ?v= on each visit, so the browser never uses an old copy (see the scripts at the bottom) -->
+  <script>
+    const VERSION = Date.now();
+    document.write(`<link rel="stylesheet" href="style.css?v=${VERSION}">`);
+  </script>
 </head>
 <body>
   <!-- everything you play with, sized to fit the screen on a computer -->
@@ -53,7 +57,9 @@
   <p class="version" id="version"></p>
   </footer>
 
-  <script src="puzzles.js"></script>
-  <script src="game.js"></script>
+  <script>
+    document.write(`<script src="puzzles.js?v=${VERSION}"><\/script>`);
+    document.write(`<script src="game.js?v=${VERSION}"><\/script>`);
+  </script>
 </body>
 </html>

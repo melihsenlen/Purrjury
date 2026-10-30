@@ -176,6 +176,8 @@ def lesson_your_turn():
         "title": "Your turn",
         "intro": "A real puzzle. At every step exactly one clue helps. Stuck? Press Next step.",
         "steps": walk,
+        # no feedback on single marks here, only this once every cat is marked and the lesson isn't solved
+        "off": "Something doesn't add up. Press Next step to find it.",
         "done": "You solved a whole puzzle! Pick a level in the menu to keep going.",
     }, seed
 

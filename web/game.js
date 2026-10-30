@@ -190,7 +190,11 @@ function renderLesson() {
     const early = s.marks.findIndex((mark, i) => mark !== "unknown" && unsolved(i).length);
     // a cat that's ready now: the cats it builds on are solved and it has no mark yet (lesson.next)
     const ready = Object.keys(l.next ?? {}).map(Number).find(cat => s.marks[cat] === "unknown" && !unsolved(cat).length);
-    if (wrong !== -1) {
+    if (l.steps) {
+      // the last lesson is a real puzzle: no word on single marks (that would let you guess your way through),
+      // only once every cat is marked and something is off. Next step then finds the first mark that's off.
+      if (s.marks.every(mark => mark !== "unknown")) feedback.textContent = l.off;
+    } else if (wrong !== -1) {
       feedback.classList.add("wrong");
       feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
     } else if (early !== -1) {
@@ -274,6 +278,7 @@ function keepTallest(bubble, feedback, l) {
       return [`Start with ${names} first: ${cats[cat].name}'s answer comes from ${names}'s clue.`];
     }),
     [`${longestName}'s mark is wrong. Look at the clues again.`],
+    ...(l.off ? [[l.off]] : []),
     [l.done, " ", nextButton(true)],   // the ending with a real button ("Back to the menu" is the longer one)
   ];
   let tallest = bubble.offsetHeight;

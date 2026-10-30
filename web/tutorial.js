@@ -443,6 +443,7 @@ const LESSONS = [
     "text": "Read Nimbus's clue. Then Juniper must be honest."
    }
   ],
+  "off": "Something doesn't add up. Press Next step to find it.",
   "done": "You solved a whole puzzle! Pick a level in the menu to keep going.",
   "puzzle": {
    "rows": 3,
@@ -544,7 +545,7 @@ const LESSONS = [
      "color": "brown",
      "row": 1,
      "column": 1,
-     "text": "Dusty is honest, fur real.",
+     "text": "Dusty is pawsitively honest.",
      "hidden": false,
      "secret": null,
      "mentions": [

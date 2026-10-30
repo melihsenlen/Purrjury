@@ -108,51 +108,6 @@ def solve(grid, known=None):
     return steps
 
 
-def rate(steps, rows, cols):
-    """How hard a solved puzzle is: "easy", "medium", "hard" or "tricky".
-
-    steps: what solve() returned. Returns None for a stuck puzzle (steps is None).
-
-    On a small grid:
-        easy:   only 1-clue steps, and just 1 opener. That one is hard to find, so the web page
-                shows the cat it finds right away (see revealed_cat)
-        medium: only 1-clue steps, and 2 or more openers to find yourself
-        hard:   at least one step needs 2 clues together
-    A big grid (BIG_GRID cats or more) is one level up, so it goes medium, hard, tricky.
-    """
-    if steps is None:
-        return None   # stuck, not solvable by a person
-
-    if any(level == 2 for level, _speakers, _found, _options in steps):
-        base = 2   # hard
-    elif steps[0][3] == 1:
-        base = 0   # easy: one opener, its cat gets revealed
-    else:
-        base = 1   # medium: several openers to find
-
-    return levels_for(rows, cols)[base]
-
-
-def solved_before_two_clues(steps, n_cats):
-    """How much of the grid (0 to 1) is solved when the first 2-clue step comes, or None if there isn't one."""
-    known = 0
-    for level, _speakers, found, _options in steps:
-        if level == 2:
-            return known / n_cats
-        known += len(found)
-    return None
-
-
-def revealed_cat(steps):
-    """The cat an easy puzzle starts with: one the first opener finds, a liar if it finds one.
-
-    A liar, so the start isn't too easy: an honest cat's clue can be read straight away.
-    """
-    found = steps[0][2]
-    liars = [cat for cat, is_liar in found.items() if is_liar]
-    return (liars or sorted(found))[0]
-
-
 def levels_for(rows, cols):
     """The 3 levels a grid of this size can get: easy to hard, or medium to tricky on a big grid."""
     bump = 1 if rows * cols >= BIG_GRID else 0

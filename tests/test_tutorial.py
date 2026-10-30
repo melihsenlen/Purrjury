@@ -42,8 +42,16 @@ def test_next_lines_point_at_cats_that_build_on_others():
         assert set(lesson.get("next", {})) <= set(lesson.get("after", {}))
 
 
-def test_tools_lesson_lists_the_three_tools(lessons):
-    assert [task["id"] for task in lessons[3]["tasks"]] == ["used", "notes", "connections"]
+def test_tools_lesson_tour_fits_its_puzzle(lessons):
+    """The tour's texts name the cats of seed 400, so the lesson must still be that puzzle."""
+    p = lessons[3]["puzzle"]
+    assert [cat["name"] for cat in p["cats"]] == ["Apricot", "Biscuit", "Clover", "Doodle"]
+    assert p["given"] == 3 and p["liars"] == [False, True, False, False]
+    assert [step["id"] for step in lessons[3]["tour"]] == ["note", "connections", "clover", "hint", "used", "last"]
+    for step in lessons[3]["tour"]:
+        if "mark" in step.get("done", {}):
+            cat, mark = step["done"]["mark"]
+            assert (mark == "liar") == p["liars"][cat]
 
 
 def test_last_lesson_has_one_way_through_and_its_steps_follow_it(lessons):

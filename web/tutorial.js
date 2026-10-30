@@ -224,22 +224,80 @@ const LESSONS = [
  },
  {
   "title": "Your tools",
-  "intro": "A tiny puzzle to try the buttons on. Solve it, and try each tool once:",
-  "tasks": [
+  "intro": "A tiny puzzle to try the buttons on. I'll show you each one.",
+  "tour": [
    {
-    "id": "used",
-    "text": "Tap \u2713 on a card to grey out a clue you're done with"
-   },
-   {
-    "id": "notes",
-    "text": "Tap \u270e to add a note or a tag"
+    "id": "note",
+    "point": "pen",
+    "cat": 3,
+    "done": {
+     "note": 3
+    },
+    "text": "Doodle is honest, so its clue is true. Tap \u270e on Doodle and write that down in your own words. You can add a tag there too.",
+    "placeholder": "e.g. one of Biscuit and Clover is a liar"
    },
    {
     "id": "connections",
-    "text": "Right click (or long-press) a cat to see which cats talk about it"
+    "point": "card",
+    "cat": 3,
+    "done": {
+     "connections": 3
+    },
+    "text": "{press} Doodle to see which cats talk about Doodle."
+   },
+   {
+    "id": "clover",
+    "point": "card",
+    "cat": 2,
+    "done": {
+     "mark": [
+      2,
+      "honest"
+     ]
+    },
+    "text": "Clover talks about Doodle: \"Doodle is honest.\" That's true, so Clover is honest too. Mark Clover."
+   },
+   {
+    "id": "hint",
+    "point": "hint",
+    "done": {
+     "mark": [
+      1,
+      "liar"
+     ]
+    },
+    "text": "Who's next? Press Hint to see a clue that works right now.",
+    "again": "That's Doodle's clue. Press Hint again to see which cat it finds.",
+    "found": "Doodle's clue finds Biscuit: one of Biscuit, Clover and Doodle is a liar, and it's not Clover or Doodle. Mark Biscuit."
+   },
+   {
+    "id": "used",
+    "point": "check",
+    "cat": 3,
+    "done": {
+     "used": 3
+    },
+    "text": "Doodle's clue is used up. Tap its \u2713 to grey it out. Clover's and Biscuit's are used up too, grey them out if you like."
+   },
+   {
+    "id": "last",
+    "text": "Figure out Apricot yourself now!"
    }
   ],
-  "done": "Solved! In the real game, Check tells you if your marks are right so far, Hint shows a clue that works right now, and Reveal shows the answer.",
+  "why": {
+   "0": "Biscuit is a liar, so Doodle is the only honest cat in column 2. Apricot's clue is true: Apricot is honest.",
+   "1": "Doodle is honest, so exactly one of Biscuit, Clover and Doodle is a liar. That's Biscuit.",
+   "2": "If Clover were a liar, Clover's clue would be false, and Doodle would be a liar. But Doodle is honest."
+  },
+  "after": {
+   "0": [
+    1
+   ],
+   "1": [
+    2
+   ]
+  },
+  "done": "Solved! Those tools are there in every puzzle, use them whenever they help.",
   "puzzle": {
    "rows": 2,
    "cols": 2,

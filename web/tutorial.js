@@ -2,7 +2,7 @@
 const LESSONS = [
  {
   "title": "Honest cats tell the truth",
-  "intro": "Ash is honest: the lock means it's given. So Ash's clue is true. Tap Bean to mark it: once for honest, twice for liar.",
+  "intro": "Ash is honest: the \ud83d\udd12 in the corner of Ash's card means it's given. So Ash's clue is true. Tap Bean to mark it: once for honest, twice for liar.",
   "why": {
    "1": "Ash is honest, so Ash's clue is true: Bean is a liar."
   },

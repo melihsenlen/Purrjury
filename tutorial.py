@@ -51,7 +51,8 @@ def lesson_honest():
     say(grid, 1, CountLiars(1, [0], "", "exactly", 1), "Ash is a liar.")
     return grid, [False, True], {0: False}, {
         "title": "Honest cats tell the truth",
-        "intro": "Ash is honest: the lock means it's given. So Ash's clue is true. "
+        # "corner", not "bottom right": on phones the lock sits top right, on the name band
+        "intro": "Ash is honest: the \U0001F512 in the corner of Ash's card means it's given. So Ash's clue is true. "
                  "Tap Bean to mark it: once for honest, twice for liar.",
         "why": {1: "Ash is honest, so Ash's clue is true: Bean is a liar."},
         "done": "Right! And Bean's clue is false, just like a liar's clue should be.",

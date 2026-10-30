@@ -140,7 +140,10 @@ function startTutorial() {
 }
 
 
-// the box above a lesson's grid: title, what to do, the tools to try, and feedback on your marks
+let lastSaid = "";   // what the guide said last time, so it only hops when that changes
+
+// the guide above a lesson's grid: a tuxedo cat (a coat no puzzle cat has) with a speech bubble
+// that holds the title, what to do, the tools to try, and feedback on your marks
 function renderLesson() {
   const l = lesson();
   document.body.classList.toggle("in-lesson", l !== null);
@@ -150,11 +153,19 @@ function renderLesson() {
   const s = state();
 
   lessonBox.innerHTML = "";
+  const guide = document.createElement("img");
+  guide.className = "guide";
+  guide.src = `sprites/cat_tuxedo_${s.solved ? "happy" : "neutral"}.png`;   // happy once the lesson is solved
+  guide.alt = "";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  lessonBox.append(guide, bubble);
+
   const title = document.createElement("h2");
   title.textContent = l.title;
   const intro = document.createElement("p");
   intro.textContent = l.intro;
-  lessonBox.append(title, intro);
+  bubble.append(title, intro);
 
   if (l.tasks) {
     const tasks = document.createElement("ul");
@@ -165,7 +176,7 @@ function renderLesson() {
       if (s.tried[task.id]) item.classList.add("done");
       tasks.append(item);
     });
-    lessonBox.append(tasks);
+    bubble.append(tasks);
   }
 
   // why a mark is wrong (lessons 1 to 3 explain it), or the lesson's ending once it's solved
@@ -187,7 +198,16 @@ function renderLesson() {
       feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
     }
   }
-  lessonBox.append(feedback);
+  if (feedback.textContent) bubble.append(feedback);
+
+  // the cat hops when it says something new (a new lesson, a why line, the ending), not on every tap
+  // (the guide and bubble are new elements on every render, so only the new ones get the animation class)
+  const said = `${current} ${bubble.textContent}`;
+  if (said !== lastSaid) {
+    guide.classList.add("hop");
+    bubble.classList.add("pop");
+  }
+  lastSaid = said;
 }
 
 

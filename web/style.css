@@ -203,10 +203,28 @@ button:hover { border-color: var(--muted); }
 
 /* "How to play": the button on the menu, and the box above a lesson's grid */
 #how-to-play { font-weight: 600; padding: 8px 18px; }
-#lesson { max-width: 640px; margin: 0 auto 8px; text-align: center; }
-#lesson h2 { font-size: 1.1rem; margin: 4px 0; }
+/* the guide cat on the left, its speech bubble on the right with a little tail pointing at it */
+#lesson { --bubble: #fff4d6; display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 800px; margin: 0 auto 8px; }
+#lesson .guide { width: 128px; height: 128px; image-rendering: pixelated; flex: none; }
+/* warm yellow, so it stands out from the white cards */
+#lesson .bubble {
+  position: relative; flex: 1; padding: 12px 18px;
+  background: var(--bubble); border: 3px solid var(--ink); border-radius: 18px;
+  font-size: 1.15rem; box-shadow: 0 4px 0 #0002;
+}
+#lesson .bubble::before {   /* the tail: a small square turned 45 degrees, half under the bubble's edge */
+  content: ""; position: absolute; left: -11px; top: calc(50% - 9px); width: 16px; height: 16px;
+  background: var(--bubble); border-left: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: rotate(45deg);
+}
+/* when the guide says something new: the cat hops, the bubble pops in */
+#lesson .guide.hop { animation: hop 0.5s ease-out; }
+#lesson .bubble.pop { animation: pop 0.3s ease-out; }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-18px); } 65% { transform: translateY(0); } 80% { transform: translateY(-5px); } }
+@keyframes pop { from { transform: scale(0.94); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #lesson .guide.hop, #lesson .bubble.pop { animation: none; } }
+#lesson h2 { font-size: 1.2rem; margin: 2px 0 4px; }
 #lesson p { margin: 4px 0; }
-.lesson-tasks { list-style: none; padding: 0; margin: 6px 0; font-size: 0.9rem; color: var(--muted); }
+.lesson-tasks { list-style: none; padding: 0; margin: 6px 0; font-size: 0.95rem; color: var(--muted); }
 .lesson-tasks li::before { content: "\25CB  "; }                  /* an empty circle */
 .lesson-tasks li.done { color: var(--honest); }
 .lesson-tasks li.done::before { content: "\2713  "; }             /* a check mark once tried */
@@ -256,11 +274,13 @@ button:hover { border-color: var(--muted); }
   .badge { top: auto; bottom: 6px; left: auto; right: 10px; }
   /* 3x3 cards are big, so their clue and name get a bigger font (fitText still shrinks it if needed) */
   #grid[data-cols="3"] .text { font-size: 1.2rem; }
-  #grid[data-cols="3"] .name { font-size: 1.1rem; }
+  /* the tutorial's 2x2 and 1x2 grids have even bigger cards */
+  #grid[data-cols="2"] .text, #grid[data-cols="1"] .text { font-size: 1.4rem; }
+  #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .name { font-size: 1.1rem; }
   /* and a bigger cat: 3x the sprite, 4x on tall cards (whole multiples keep the pixels crisp) */
-  #grid[data-cols="3"] .sprite { width: 96px; height: 96px; }
+  #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .sprite { width: 96px; height: 96px; }
   @container (min-height: 200px) {
-    #grid[data-cols="3"] .sprite { width: 128px; height: 128px; }
+    #grid:is([data-cols="1"], [data-cols="2"], [data-cols="3"]) .sprite { width: 128px; height: 128px; }
   }
   /* very short cards: a smaller cat */
   @container (max-height: 84px) {
@@ -292,6 +312,12 @@ button:hover { border-color: var(--muted); }
   }
   /* lessons have tiny grids: each row gets the height it would have in a 3x3, not the whole screen */
   body.in-lesson #grid { height: calc((100dvh - 50px) * var(--rows) / 3); }
+  /* a smaller guide and bubble, so the lesson still fits above the grid */
+  #lesson { gap: 10px; align-items: flex-start; }
+  #lesson .guide { width: 64px; height: 64px; margin-top: 6px; }
+  #lesson .bubble { font-size: 0.95rem; padding: 8px 12px; border-width: 2px; }
+  #lesson .bubble::before { top: 30px; left: -9px; width: 14px; height: 14px; border-width: 2px; }
+  #lesson h2 { font-size: 1.05rem; }
   /* the hint / connections label floats over the grid instead of taking a row */
   #legend {
     position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 20; width: max-content; max-width: calc(100% - 20px);

@@ -174,7 +174,9 @@ def lesson_your_turn():
         })
     return grid, world, given, {
         "title": "Your turn",
-        "intro": "A real puzzle. At every step exactly one clue helps. Stuck? Press Next step.",
+        # Cricket's clue is about Nimbus's neighbors, and players may count the corners too
+        "intro": "A real puzzle. At every step exactly one clue helps. Stuck? Press Next step. "
+                 "Neighbors are only the cats above, below, left and right, no corners.",
         "steps": walk,
         # no feedback on single marks here, only this once every cat is marked and the lesson isn't solved
         "off": "Something doesn't add up. Press Next step to find it.",

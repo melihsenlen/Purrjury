@@ -400,7 +400,7 @@ const LESSONS = [
  },
  {
   "title": "Your turn",
-  "intro": "A real puzzle. At every step exactly one clue helps. Stuck? Press Next step.",
+  "intro": "A real puzzle. At every step exactly one clue helps. Stuck? Press Next step. Neighbors are only the cats above, below, left and right, no corners.",
   "steps": [
    {
     "speaker": 3,

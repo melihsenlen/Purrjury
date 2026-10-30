@@ -73,6 +73,9 @@ const LESSONS = [
     0
    ]
   },
+  "next": {
+   "1": "Right, Ash is a liar! So Ash's clue is false. What does that tell you about Bean?"
+  },
   "done": "That's the whole trick: a liar's clue is always false.",
   "puzzle": {
    "rows": 1,
@@ -139,6 +142,9 @@ const LESSONS = [
    "2": [
     1
    ]
+  },
+  "next": {
+   "2": "Right, Bean is a liar! So flip Bean's clue. What does it tell you about Cleo?"
   },
   "done": "That's chaining: every cat you solve tells you how to read its clue.",
   "puzzle": {

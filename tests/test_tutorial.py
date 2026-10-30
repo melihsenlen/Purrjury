@@ -35,6 +35,13 @@ def test_after_points_at_other_cats_that_are_not_given():
             assert not set(first) & set(given)
 
 
+def test_next_lines_point_at_cats_that_build_on_others():
+    """lesson["next"]: the guide points at a cat once the cats it builds on are solved, so it needs an after."""
+    for maker in (lesson_honest, lesson_liar, lesson_chain):
+        _grid, _world, _given, lesson = maker()
+        assert set(lesson.get("next", {})) <= set(lesson.get("after", {}))
+
+
 def test_tools_lesson_lists_the_three_tools(lessons):
     assert [task["id"] for task in lessons[3]["tasks"]] == ["used", "notes", "connections"]
 

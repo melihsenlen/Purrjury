@@ -73,6 +73,8 @@ def lesson_liar():
         },
         # Bean's why line builds on Ash: tapping Bean first makes the guide say to start with Ash
         "after": {1: [0]},
+        # once Ash is right, the guide points at Bean (a nudge, not the answer)
+        "next": {1: "Right, Ash is a liar! So Ash's clue is false. What does that tell you about Bean?"},
         "done": "That's the whole trick: a liar's clue is always false.",
     }
 
@@ -91,6 +93,7 @@ def lesson_chain():
             2: "Bean is a liar, so Bean's clue is false: Cleo is a liar too.",
         },
         "after": {2: [1]},
+        "next": {2: "Right, Bean is a liar! So flip Bean's clue. What does it tell you about Cleo?"},
         "done": "That's chaining: every cat you solve tells you how to read its clue.",
     }
 

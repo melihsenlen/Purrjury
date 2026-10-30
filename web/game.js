@@ -172,6 +172,9 @@ function renderLesson() {
   title.textContent = l.title;
   const intro = document.createElement("p");
   intro.textContent = l.intro;
+  // the ending (and the last lesson's "something doesn't add up") take the intro's place, so the bubble needs less room
+  const allMarked = s.marks.every(mark => mark !== "unknown");
+  intro.hidden = s.solved || (l.steps !== undefined && allMarked);
   bubble.append(title, intro);
 
   // why a mark is wrong (lessons 1 to 4 explain it), the tour step you're on, or the lesson's ending once it's solved
@@ -193,7 +196,7 @@ function renderLesson() {
     if (l.steps) {
       // the last lesson is a real puzzle: no word on single marks (that would let you guess your way through),
       // only once every cat is marked and something is off. Next step then finds the first mark that's off.
-      if (s.marks.every(mark => mark !== "unknown")) feedback.textContent = l.off;
+      if (allMarked) feedback.textContent = l.off;
     } else if (wrong !== -1) {
       feedback.classList.add("wrong");
       feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
@@ -216,7 +219,7 @@ function renderLesson() {
   }
   hintButton.classList.toggle("point", guidePoint?.point === "hint");
   bubble.append(feedback);
-  keepTallest(bubble, feedback, l);
+  keepTallest(bubble, intro, feedback, l);
 
   // the cat hops when it says something new (a new lesson, a why line, the ending), not on every tap
   // (the guide and bubble are new elements on every render, so only the new ones get the animation class)
@@ -265,8 +268,9 @@ function tourText(text) {
 // The bubble starts as tall as it will ever get in this lesson, so the cards under it never move:
 // it tries every feedback this lesson can show (each why line, the ending) and keeps the tallest height.
 // This all happens before the browser draws, so you never see the tries.
-function keepTallest(bubble, feedback, l) {
+function keepTallest(bubble, intro, feedback, l) {
   const real = [...feedback.childNodes];
+  const realIntro = intro.hidden;
   const longestName = puzzle().cats.map(cat => cat.name).sort((a, b) => b.length - a.length)[0];
   const cats = puzzle().cats;
   const options = [
@@ -277,15 +281,20 @@ function keepTallest(bubble, feedback, l) {
       const names = first.map(c => cats[c].name).join(" and ");
       return [`Start with ${names} first: ${cats[cat].name}'s answer comes from ${names}'s clue.`];
     }),
-    [`${longestName}'s mark is wrong. Look at the clues again.`],
-    ...(l.off ? [[l.off]] : []),
-    [l.done, " ", nextButton(true)],   // the ending with a real button ("Back to the menu" is the longer one)
+    // the last lesson never says a single mark is wrong (it has l.off instead, see below)
+    ...(l.steps ? [] : [[`${longestName}'s mark is wrong. Look at the clues again.`]]),
   ];
-  let tallest = bubble.offsetHeight;
-  for (const nodes of options) {
-    feedback.replaceChildren(...nodes);
-    tallest = Math.max(tallest, bubble.offsetHeight);
+  // these show in place of the intro: the ending with a real button ("Back to the menu" is the longer one), and l.off
+  const instead = [[l.done, " ", nextButton(true)], ...(l.off ? [[l.off]] : [])];
+  let tallest = 0;
+  for (const [hidden, group] of [[false, [[], ...options]], [true, instead]]) {
+    intro.hidden = hidden;
+    for (const nodes of group) {
+      feedback.replaceChildren(...nodes);
+      tallest = Math.max(tallest, bubble.offsetHeight);
+    }
   }
+  intro.hidden = realIntro;
   feedback.replaceChildren(...real);
   bubble.style.minHeight = tallest + "px";
 }
@@ -420,6 +429,12 @@ function render() {
       render();
     });
     if (guidePoint?.point === "pen" && guidePoint.cat === i && editing !== i) pen.classList.add("point");
+
+    // right click or long-press on these buttons does nothing: it shouldn't reach the card and show connections
+    for (const button of [usedToggle, pen]) {
+      button.addEventListener("contextmenu", event => { event.preventDefault(); event.stopPropagation(); });
+      button.addEventListener("touchstart", event => event.stopPropagation(), { passive: true });
+    }
 
     card.append(top, text, badge, usedToggle, pen);
 

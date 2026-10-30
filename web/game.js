@@ -27,7 +27,7 @@ function freshState(p) {
     notes: p.cats.map(() => ""),   // your own note for every cat
     tags: p.cats.map(() => []),    // ids from TAGS
     checks: 0, wrongChecks: 0, hints: 0, seconds: 0, solved: false, revealed: false,
-    tried: {},   // lessons: the tools you've tried, e.g. { used: true }
+    tour: {},    // lesson 4: the tour steps you've done, e.g. { note: true }
   };
 }
 
@@ -49,6 +49,8 @@ let highlightMode = "by";    // "by": cats that talk about it, "about": cats it 
 let lastRightClick = { index: null, time: 0 };   // to notice a double right click
 let highlightTimer = null;   // clears the highlight after a few seconds
 let hintCards = new Set();   // cards outlined by the last hint
+let hintFinds = [];          // the cats that hint's clue finds, shown when you press Hint again
+let hintFound = new Set();   // those cats, once they're shown
 let editing = null;          // the cat whose notes and tags are open, or null
 let pressTimer = null;       // for long-press on phones
 let longPressed = false;     // true right after a long-press, so the tap after it doesn't change the mark
@@ -142,12 +144,15 @@ function startTutorial() {
 
 let lastSaid = "";   // what the guide said last time, so it only hops when that changes
 let guidePoints = new Set();   // cats the guide points at ("start with Ash"), they pulse like a hint
+let guidePoint = null;         // the tour step whose button (pen, ✓ or Hint) the guide points at
 
 // the guide above a lesson's grid: a tuxedo cat (a coat no puzzle cat has) with a speech bubble
 // that holds the title, what to do, the tools to try, and feedback on your marks
 function renderLesson() {
   const l = lesson();
   guidePoints = new Set();
+  guidePoint = null;
+  hintButton.classList.remove("point");
   document.body.classList.toggle("in-lesson", l !== null);
   hintButton.textContent = l?.steps ? "Next step" : "Hint";
   lessonBox.hidden = l === null;
@@ -169,19 +174,7 @@ function renderLesson() {
   intro.textContent = l.intro;
   bubble.append(title, intro);
 
-  if (l.tasks) {
-    const tasks = document.createElement("ul");
-    tasks.className = "lesson-tasks";
-    l.tasks.forEach(task => {
-      const item = document.createElement("li");
-      item.textContent = task.text;
-      if (s.tried[task.id]) item.classList.add("done");
-      tasks.append(item);
-    });
-    bubble.append(tasks);
-  }
-
-  // why a mark is wrong (lessons 1 to 3 explain it), or the lesson's ending once it's solved
+  // why a mark is wrong (lessons 1 to 4 explain it), the tour step you're on, or the lesson's ending once it's solved
   const feedback = document.createElement("p");
   feedback.className = "lesson-feedback";
   if (s.solved) {
@@ -209,8 +202,15 @@ function renderLesson() {
     } else if (ready !== undefined) {
       feedback.textContent = l.next[ready];
       guidePoints = new Set([ready]);
+    } else if (tourStep(l, s)) {
+      const step = tourStep(l, s);
+      feedback.textContent = tourText(stepText(step));
+      // the hint step points at Hint until it has shown the cat it finds
+      guidePoint = step.point === "hint" && hintFound.size ? null : step;
+      if (step.point === "card") guidePoints = new Set([step.cat]);
     }
   }
+  hintButton.classList.toggle("point", guidePoint?.point === "hint");
   bubble.append(feedback);
   keepTallest(bubble, feedback, l);
 
@@ -225,6 +225,39 @@ function renderLesson() {
 }
 
 
+// lesson 4's tour: the first step you haven't done yet. A step stays done once you've done it,
+// and steps you do early count too, so the guide just skips them when it gets there.
+function tourStep(l, s) {
+  if (!l.tour) return null;
+  l.tour.forEach(step => { if (stepDone(step, s)) s.tour[step.id] = true; });
+  return l.tour.find(step => !s.tour[step.id]) ?? null;
+}
+
+
+function stepDone(step, s) {
+  const done = step.done ?? {};   // the last step has none: it ends when the lesson is solved
+  if ("note" in done) return s.notes[done.note].trim() !== "" && editing !== done.note;   // written and closed
+  if ("connections" in done) return highlight === done.connections;
+  if ("mark" in done) return s.marks[done.mark[0]] === done.mark[1];
+  if ("used" in done) return s.used[done.used];
+  return false;
+}
+
+
+// the hint step has three texts: before Hint, after one press, and after the second press shows the cat
+function stepText(step) {
+  if (step.point !== "hint") return step.text;
+  if (hintFound.size) return step.found;
+  return hintCards.size ? step.again : step.text;
+}
+
+
+// "{press}" in a tour text: right click on a computer, long-press on a phone
+function tourText(text) {
+  return text.replace("{press}", matchMedia("(hover: none)").matches ? "Long-press" : "Right click");
+}
+
+
 // The bubble starts as tall as it will ever get in this lesson, so the cards under it never move:
 // it tries every feedback this lesson can show (each why line, the ending) and keeps the tallest height.
 // This all happens before the browser draws, so you never see the tries.
@@ -235,6 +268,7 @@ function keepTallest(bubble, feedback, l) {
   const options = [
     ...Object.values(l.why ?? {}).map(text => [text]),
     ...Object.values(l.next ?? {}).map(text => [text]),
+    ...(l.tour ?? []).flatMap(step => [step.text, step.again, step.found]).filter(Boolean).map(text => [tourText(text)]),
     ...Object.entries(l.after ?? {}).map(([cat, first]) => {
       const names = first.map(c => cats[c].name).join(" and ");
       return [`Start with ${names} first: ${cats[cat].name}'s answer comes from ${names}'s clue.`];
@@ -270,12 +304,6 @@ function checkLesson() {
 }
 
 
-// lessons: remember that a tool was tried, so its line gets a check mark
-function tried(tool) {
-  if (lesson()) state().tried[tool] = true;
-}
-
-
 // --- Game ---
 
 
@@ -290,6 +318,7 @@ function render() {
   renderLesson();
   info.title = `seed ${p.seed}`;   // handy when someone reports a puzzle
   grid.dataset.cols = p.cols;   // lets the CSS shrink the clue text on narrow 4x4 cards
+  grid.dataset.rows = p.rows;   // and give the lessons' one-row grids taller cards
   grid.style.setProperty("--cols", p.cols);
   grid.style.setProperty("--rows", p.rows);
   // on a computer the cards share the whole grid area (the CSS divides it into this many slots)
@@ -314,6 +343,7 @@ function render() {
       else if (highlightMode === "about" && p.cats[highlight].mentions.includes(i)) card.classList.add("talks-about");
     }
     if (hintCards.has(i) || guidePoints.has(i)) card.classList.add("hint");
+    if (hintFound.has(i)) card.classList.add("hint-found");
 
     // header: the cat in the middle, its name and coat color under it, then a divider before the clue
     const top = document.createElement("div");
@@ -369,9 +399,9 @@ function render() {
     usedToggle.addEventListener("click", event => {
       event.stopPropagation();   // don't also change the mark
       s.used[i] = !s.used[i];
-      tried("used");
       render();
     });
+    if (guidePoint?.point === "check" && guidePoint.cat === i) usedToggle.classList.add("point");
 
     // pen: open your notes and tags for this cat
     const pen = document.createElement("button");
@@ -382,9 +412,9 @@ function render() {
     pen.addEventListener("click", event => {
       event.stopPropagation();   // don't also change the mark
       editing = editing === i ? null : i;
-      tried("notes");
       render();
     });
+    if (guidePoint?.point === "pen" && guidePoint.cat === i && editing !== i) pen.classList.add("point");
 
     card.append(top, text, badge, usedToggle, pen);
 
@@ -505,7 +535,8 @@ function noteEditor(i) {
 
   const field = document.createElement("textarea");
   field.rows = 2;
-  field.placeholder = "Note, e.g. honest if Hazel is";
+  // lesson 4's tour suggests what to write on its cat
+  field.placeholder = lesson()?.tour?.find(step => step.done?.note === i)?.placeholder ?? "Note, e.g. honest if Hazel is";
   field.value = s.notes[i];
   field.addEventListener("input", () => { s.notes[i] = field.value; });   // no render here, it would lose the cursor
 
@@ -534,7 +565,6 @@ function cycleMark(i) {
 function showConnections(i, mode = "by") {
   const cat = puzzle().cats[i];
   clearHint();
-  tried("connections");
   highlight = i;
   highlightMode = mode;
   // small colored label so you know what the color means
@@ -608,7 +638,7 @@ function go(step) {
   if (lesson() && current + step < 0) return;
   highlight = null;
   editing = null;
-  hintCards.clear();
+  clearHint();
   legend.innerHTML = "";
   current = (current + step + list.length) % list.length;
   message.textContent = "";
@@ -664,6 +694,17 @@ function hint() {
     if ((mark === "liar") === p.liars[i]) known.set(i, p.liars[i]);
     else wrong++;
   });
+  const wrongNote = wrong > 0 ? ` (${wrong} of your marks ${wrong === 1 ? "is" : "are"} wrong)` : "";
+
+  // pressed again: also show the cat (or cats) that clue finds. After that there's nothing more to show.
+  if (hintCards.size && hintFinds.length) {
+    if (hintFound.size) return;
+    s.hints++;
+    hintFound = new Set(hintFinds);
+    const names = hintFinds.map(cat => p.cats[cat].name).join(" and ");
+    showHintLabel(`${hintCards.size === 1 ? "this clue finds" : "these two clues find"} ${names}${wrongNote}`);
+    return render();
+  }
 
   // just one hint: the first clue (in grid order) that finds a cat on its own,
   // or if none does, the first pair of clues that finds one together
@@ -673,29 +714,37 @@ function hint() {
   let label = "";
   if (single) {
     useful = [single.i];
+    hintFinds = forcedCats([single.clue], known);
     label = "this clue can find a cat right now";
   } else {
     pairSearch:
     for (let a = 0; a < clues.length; a++) {
       for (let b = a + 1; b < clues.length; b++) {
-        if (forcedCats([clues[a].clue, clues[b].clue], known).length > 0) {
+        const found = forcedCats([clues[a].clue, clues[b].clue], known);
+        if (found.length > 0) {
           useful = [clues[a].i, clues[b].i];
+          hintFinds = found;
           break pairSearch;
         }
       }
     }
     label = "combine these two clues to find a cat";
   }
-  if (wrong > 0) label += ` (${wrong} of your marks ${wrong === 1 ? "is" : "are"} wrong)`;
 
   s.hints++;
   hintCards = new Set(useful);
+  showHintLabel(useful.length ? label + wrongNote : "no hint found");
+  render();
+}
+
+
+// the hint's small label above the grid
+function showHintLabel(text) {
   legend.innerHTML = "";
   const tag = document.createElement("span");
   tag.className = "tag tag-hint";
-  tag.textContent = useful.length ? label : "no hint found";
+  tag.textContent = text;
   legend.append(tag);
-  render();
 }
 
 
@@ -708,16 +757,14 @@ function nextStep() {
   if (!step) return;
   s.hints++;
   hintCards = new Set([step.speaker]);
-  legend.innerHTML = "";
-  const tag = document.createElement("span");
-  tag.className = "tag tag-hint";
-  tag.textContent = step.text;
-  legend.append(tag);
+  showHintLabel(step.text);
   render();
 }
 
 
 function clearHint() {
+  hintFinds = [];
+  hintFound.clear();
   if (hintCards.size === 0) return;
   hintCards.clear();
   legend.innerHTML = "";

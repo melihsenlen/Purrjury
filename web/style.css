@@ -190,7 +190,11 @@ button:hover { border-color: var(--muted); }
   0% { box-shadow: 0 0 0 0 #c98a12aa; }
   70%, 100% { box-shadow: 0 0 0 14px #c98a1200; }
 }
-@media (prefers-reduced-motion: reduce) { .card.hint { animation: none; } }
+/* a button the guide points at (the pen, the ✓, Hint): it pulses the same way */
+.point { outline: 3px solid var(--hint); outline-offset: 2px; animation: pulse 1.4s ease-out infinite; }
+/* pressing Hint again: the cat that clue finds gets a dashed outline */
+.card.hint-found { outline: 3px dashed var(--hint); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .card.hint, .point { animation: none; } }
 .tag-hint { color: var(--hint); }
 
 /* menu: pick a grid size, then a difficulty */
@@ -230,10 +234,6 @@ button:hover { border-color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { #lesson .guide.hop, #lesson .bubble.pop { animation: none; } }
 #lesson h2 { font-size: 1.2rem; margin: 2px 0 4px; }
 #lesson p { margin: 4px 0; }
-.lesson-tasks { list-style: none; padding: 0; margin: 6px 0; font-size: 0.95rem; color: var(--muted); }
-.lesson-tasks li::before { content: "\25CB  "; }                  /* an empty circle */
-.lesson-tasks li.done { color: var(--honest); }
-.lesson-tasks li.done::before { content: "\2713  "; }             /* a check mark once tried */
 /* the bubble keeps room for its longest feedback (keepTallest in game.js), so nothing moves when it shows up */
 .lesson-feedback { line-height: 1.35; font-weight: 600; }
 .lesson-feedback.wrong { color: var(--liar); }
@@ -259,6 +259,11 @@ button:hover { border-color: var(--muted); }
     grid-template-columns: repeat(var(--cols), calc((100% - (var(--slots) - 1) * 10px) / var(--slots)));
     grid-template-rows: repeat(var(--rows), calc((100% - (var(--slots) - 1) * 10px) / var(--slots)));
     justify-content: center; align-content: center;
+  }
+  /* the lessons' 1x2 and 1x3 grids have height to spare: a card is never too short for the cat, its name
+     and its color (about 160px), even when the guide's bubble is tall */
+  #grid[data-rows="1"] {
+    grid-template-rows: max(calc((100% - (var(--slots) - 1) * 10px) / var(--slots)), min(160px, 100%));
   }
   /* left: the cat with its name and color under it. right: the clue, in the middle of the space next to them.
      The clue's row can shrink, and fitText then makes its font smaller. */

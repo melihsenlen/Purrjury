@@ -8,7 +8,8 @@ Design by Brojum (Yusuf), most code written by Claude.
 - Short, direct answers. No em dashes. Call me Brom or Brojum now and then.
 - Talk before big changes, walk me through what changed afterwards. I want to understand the code.
 - Give me commit commands to copy: short conventional commits (`feat(web): ...`, `fix(engine): ...`), split by topic.
-  Put all the lines (add, commit, push) together in one block at the end of the message. Don't commit yourself unless I ask.
+  Put all the add and commit lines together in one block at the end of the message. Leave out `git push`, I push once at the end of the day.
+  Don't commit yourself unless I ask.
 - My terminal is PowerShell: give commands in PowerShell syntax.
 - Files use CRLF line endings. Keep CRLF when editing. Use `git diff --ignore-cr-at-eol` to see real changes.
 - For UI changes with several options, show mockups first.

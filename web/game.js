@@ -141,11 +141,13 @@ function startTutorial() {
 
 
 let lastSaid = "";   // what the guide said last time, so it only hops when that changes
+let guidePoints = new Set();   // cats the guide points at ("start with Ash"), they pulse like a hint
 
 // the guide above a lesson's grid: a tuxedo cat (a coat no puzzle cat has) with a speech bubble
 // that holds the title, what to do, the tools to try, and feedback on your marks
 function renderLesson() {
   const l = lesson();
+  guidePoints = new Set();
   document.body.classList.toggle("in-lesson", l !== null);
   hintButton.textContent = l?.steps ? "Next step" : "Hint";
   lessonBox.hidden = l === null;
@@ -184,21 +186,24 @@ function renderLesson() {
   feedback.className = "lesson-feedback";
   if (s.solved) {
     feedback.classList.add("solved");
-    feedback.textContent = l.done;
-    const next = document.createElement("button");
-    const last = current === list.length - 1;
-    next.textContent = last ? "Back to the menu" : "Next lesson →";
-    next.addEventListener("click", () => last ? showMenu() : go(1));
-    feedback.append(" ", next);
+    feedback.append(l.done, " ", nextButton(current === list.length - 1));
   } else {
     const p = puzzle();
     const wrong = s.marks.findIndex((mark, i) => mark !== "unknown" && (mark === "liar") !== p.liars[i]);
-    if (wrong !== -1) {
+    // the cats this one's answer builds on (lesson.after) that aren't solved yet: start there instead
+    const first = (l.after?.[wrong] ?? []).filter(cat => s.marks[cat] !== (p.liars[cat] ? "liar" : "honest"));
+    if (wrong !== -1 && first.length) {
+      const names = first.map(cat => p.cats[cat].name).join(" and ");
+      feedback.classList.add("wrong");
+      feedback.textContent = `Start with ${names} first: ${p.cats[wrong].name}'s answer comes from ${names}'s clue.`;
+      guidePoints = new Set(first);   // and those cats pulse
+    } else if (wrong !== -1) {
       feedback.classList.add("wrong");
       feedback.textContent = l.why?.[wrong] ?? `${p.cats[wrong].name}'s mark is wrong. Look at the clues again.`;
     }
   }
-  if (feedback.textContent) bubble.append(feedback);
+  bubble.append(feedback);
+  keepTallest(bubble, feedback, l);
 
   // the cat hops when it says something new (a new lesson, a why line, the ending), not on every tap
   // (the guide and bubble are new elements on every render, so only the new ones get the animation class)
@@ -208,6 +213,41 @@ function renderLesson() {
     bubble.classList.add("pop");
   }
   lastSaid = said;
+}
+
+
+// The bubble starts as tall as it will ever get in this lesson, so the cards under it never move:
+// it tries every feedback this lesson can show (each why line, the ending) and keeps the tallest height.
+// This all happens before the browser draws, so you never see the tries.
+function keepTallest(bubble, feedback, l) {
+  const real = [...feedback.childNodes];
+  const longestName = puzzle().cats.map(cat => cat.name).sort((a, b) => b.length - a.length)[0];
+  const cats = puzzle().cats;
+  const options = [
+    ...Object.values(l.why ?? {}).map(text => [text]),
+    ...Object.entries(l.after ?? {}).map(([cat, first]) => {
+      const names = first.map(c => cats[c].name).join(" and ");
+      return [`Start with ${names} first: ${cats[cat].name}'s answer comes from ${names}'s clue.`];
+    }),
+    [`${longestName}'s mark is wrong. Look at the clues again.`],
+    [l.done, " ", nextButton(true)],   // the ending with a real button ("Back to the menu" is the longer one)
+  ];
+  let tallest = bubble.offsetHeight;
+  for (const nodes of options) {
+    feedback.replaceChildren(...nodes);
+    tallest = Math.max(tallest, bubble.offsetHeight);
+  }
+  feedback.replaceChildren(...real);
+  bubble.style.minHeight = tallest + "px";
+}
+
+
+// the button after a solved lesson: on to the next one, or back to the menu after the last
+function nextButton(last) {
+  const button = document.createElement("button");
+  button.textContent = last ? "Back to the menu" : "Next lesson →";
+  button.addEventListener("click", () => last ? showMenu() : go(1));
+  return button;
 }
 
 
@@ -263,7 +303,7 @@ function render() {
       else if (highlightMode === "by" && cat.mentions.includes(highlight)) card.classList.add("talked-by");
       else if (highlightMode === "about" && p.cats[highlight].mentions.includes(i)) card.classList.add("talks-about");
     }
-    if (hintCards.has(i)) card.classList.add("hint");
+    if (hintCards.has(i) || guidePoints.has(i)) card.classList.add("hint");
 
     // header: the cat in the middle, its name and coat color under it, then a divider before the clue
     const top = document.createElement("div");
@@ -410,7 +450,12 @@ function fitText() {
   }
 }
 
-window.addEventListener("resize", () => { if (!game.hidden) fitText(); });
+// a lesson's bubble is measured for the window's width, so a resize measures it again (render also fits the text)
+window.addEventListener("resize", () => {
+  if (game.hidden) return;
+  if (lesson()) render();
+  else fitText();
+});
 
 
 // one small tag chip: "?" or "!" as text, the colors as a dot

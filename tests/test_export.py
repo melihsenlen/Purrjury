@@ -2,8 +2,8 @@
 import base64
 import json
 
-from export import SOLVED_BEFORE_TWO_CLUES, TRICK_MIN_LEVEL, clue_table, export, has_trick_clue
-from purrjury.engine.generator import generate_puzzle
+from export import TRICK_MIN_LEVEL, clue_table, export, has_trick_clue, liar_count, make_puzzle
+from purrjury.engine.checker import find_solutions
 from purrjury.engine.solver import LEVELS
 from purrjury.board.world import make_world
 from purrjury.statements import ALL_STATEMENTS
@@ -62,42 +62,45 @@ def test_clue_table_matches_fits():
                 assert bool(bits[k // 8] >> (k % 8) & 1) == statement.fits(test_world, grid)
 
 
+def test_a_saved_seed_makes_the_same_puzzle_again(tmp_path):
+    """make_puzzle(seed) gives back exactly the puzzle export saved, answer included."""
+    puzzles = export([(3, 3)], count=1, path=str(tmp_path / "p.js"), first_seed=21)
+    for p in puzzles:
+        grid, world, _steps, _given = make_puzzle(3, 3, p["level"], p["seed"])
+        assert world == p["liars"]
+        assert [cat.statement.to_text() for row in grid for cat in row] == [c["text"] for c in p["cats"]]
+
+
 def test_easy_puzzles_have_no_trick_clues(tmp_path):
     """Trick clues ("Felix and I are the same type") only show up in hard puzzles and up."""
-    import random
     puzzles = export([(3, 3)], count=3, path=str(tmp_path / "p.js"), first_seed=3)
     for p in puzzles:
         if LEVELS.index(p["level"]) < LEVELS.index(TRICK_MIN_LEVEL):
-            random.seed(p["seed"])   # make the same puzzle again to look at its statements
-            grid, _world = generate_puzzle(3, 3, 3)
+            grid, _world, _steps, _given = make_puzzle(3, 3, p["level"], p["seed"])
             assert not has_trick_clue(grid)
 
 
-def test_only_easy_puzzles_reveal_a_cat(tmp_path):
-    """Easy puzzles start with a cat their first opener finds, the other levels start with nothing."""
-    import random
-    from purrjury.engine.solver import solve
+def test_only_easy_puzzles_show_a_cat(tmp_path):
+    """Easy puzzles start with one cat solved for you, shown with its real type. The rest start empty."""
     puzzles = export([(3, 3)], count=2, path=str(tmp_path / "p.js"), first_seed=11)
     for p in puzzles:
-        if p["level"] != "easy":
-            assert p["given"] is None
-            continue
-        random.seed(p["seed"])
-        grid, _world = generate_puzzle(3, 3, 3)
-        first_step = solve(grid)[0]
-        assert p["given"] in first_step[2]   # a cat the only opener finds
-
-
-def test_hard_puzzles_have_their_two_clue_steps_late(tmp_path):
-    """On a 3x3, no 2-clue step comes before half of the grid is solved."""
-    import random
-    from purrjury.engine.solver import solve, solved_before_two_clues
-    puzzles = export([(3, 3)], count=2, path=str(tmp_path / "p.js"), first_seed=5)
-    for p in puzzles:
-        random.seed(p["seed"])
-        grid, _world = generate_puzzle(3, 3, 3)
-        share = solved_before_two_clues(solve(grid), 9)
-        if p["level"] == "hard":
-            assert share >= SOLVED_BEFORE_TWO_CLUES
+        if p["level"] == "easy":
+            assert p["given"] is not None
         else:
-            assert share is None
+            assert p["given"] is None
+
+
+def test_exported_puzzles_have_one_answer(tmp_path):
+    puzzles = export([(3, 3)], count=1, path=str(tmp_path / "p.js"), first_seed=31)
+    for p in puzzles:
+        grid, world, _steps, _given = make_puzzle(3, 3, p["level"], p["seed"])
+        assert find_solutions(grid) == [tuple(world)]
+
+
+def test_liar_count_varies_but_never_all_or_none():
+    import random
+    random.seed(0)
+    counts = [liar_count(9) for _ in range(500)]
+    assert min(counts) >= 1 and max(counts) <= 8
+    assert len(set(counts)) >= 5   # not stuck on one number
+    assert 3 <= sorted(counts)[250] <= 4   # mostly around a third to a half

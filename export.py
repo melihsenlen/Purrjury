@@ -9,31 +9,50 @@ import json
 import random
 from datetime import datetime
 
-from purrjury.engine.generator import generate_puzzle
-from purrjury.engine.solver import (BIG_GRID, LEVELS, involved, levels_for, rate, revealed_cat, solve,
-                                    solved_before_two_clues)
+from purrjury.engine.path_generator import PathSettings, generate_path_puzzle
+from purrjury.engine.solver import BIG_GRID, LEVELS, involved, levels_for
 
-# Give up on a size after this many puzzles, in case some level is too rare to fill
-MAX_TRIES = 1000
+# Give up on a level after this many seeds, in case its settings are too hard to fill
+MAX_TRIES = 200
 
 # Trick clues ("Felix and I are the same type") only appear in puzzles of this level and up
 TRICK_MIN_LEVEL = "hard"
 
-# 2-clue steps only come once this much of the grid is solved: stuck on the first piece isn't fun,
-# stuck after a few cats makes you try harder (or press Hint).
-SOLVED_BEFORE_TWO_CLUES = 0.5
-# Random big grids almost never have late 2-clue steps, so for now they only need an opener first
-# (0 still means the 2-clue step can't be the very first one). A path-based generator should fix this.
-SOLVED_BEFORE_TWO_CLUES_BIG = 0.0
+# What each level asks of the path generator (see PathSettings). Harder levels: clues reveal fewer cats
+# at once, fewer clues work at the same time (more searching) and there are fewer ways in.
+# Easy shows one cat from the start. Playtesting decides these, they're just a first guess.
+LEVEL_SETTINGS = {
+    "easy":   PathSettings(max_cats_per_step=2, max_choices=3, openers=1, given=True),
+    "medium": PathSettings(max_cats_per_step=2, max_choices=3, openers=2),
+    "hard":   PathSettings(max_cats_per_step=1, max_choices=2, openers=1),
+}
+# A big grid (BIG_GRID cats or more) is one level up, so it gets its own steps between medium and tricky
+BIG_LEVEL_SETTINGS = {
+    "medium": PathSettings(max_cats_per_step=2, max_choices=3, openers=2),
+    "hard":   PathSettings(max_cats_per_step=1, max_choices=3, openers=2),
+    "tricky": PathSettings(max_cats_per_step=1, max_choices=2, openers=1),
+}
 
 
-def two_clue_steps_come_late(steps, rows, cols):
-    """True if the puzzle has no 2-clue steps, or its first one comes late enough (see above)."""
-    share = solved_before_two_clues(steps, rows * cols)
-    if share is None:
-        return True
-    needed = SOLVED_BEFORE_TWO_CLUES_BIG if rows * cols >= BIG_GRID else SOLVED_BEFORE_TWO_CLUES
-    return share > 0 and share >= needed
+def liar_count(n_cats):
+    """Any number of liars from 1 to all but one, mostly around a third to a half of the cats."""
+    return max(1, min(n_cats - 1, round(random.triangular(1, n_cats - 1, n_cats * 0.4))))
+
+
+def make_puzzle(rows, cols, level, seed):
+    """The puzzle a seed makes for a level: (grid, world, steps, given), or None if it didn't work out.
+
+    The same seed always makes the same puzzle, so a saved seed can be turned back into its puzzle.
+    None also when a trick clue ends up in a level below TRICK_MIN_LEVEL.
+    """
+    random.seed(seed)
+    settings = (BIG_LEVEL_SETTINGS if rows * cols >= BIG_GRID else LEVEL_SETTINGS)[level]
+    result = generate_path_puzzle(rows, cols, liar_count(rows * cols), settings)
+    if result is None:
+        return None
+    if LEVELS.index(level) < LEVELS.index(TRICK_MIN_LEVEL) and has_trick_clue(result[0]):
+        return None
+    return result
 
 
 def has_trick_clue(grid):
@@ -94,43 +113,30 @@ def puzzle_to_dict(grid, world, seed, level, given=None):
 def export(sizes, count, path="web/puzzles.js", first_seed=None, max_tries=MAX_TRIES):
     """Generate count puzzles for every difficulty level of every size, and write them to path.
 
-    The solver rates each puzzle. Stuck puzzles and levels that are already full are skipped.
+    Each level is built on purpose by the path generator with its own settings (LEVEL_SETTINGS),
+    instead of making random puzzles and rating them afterwards.
     Returns the puzzles, sorted by size and then from easy to hard.
     """
     seed = first_seed if first_seed is not None else random.randrange(1_000_000)
     puzzles = []
 
     for rows, cols in sizes:
-        liars = max(1, rows * cols // 3)
-        levels = levels_for(rows, cols)
-        wanted = {level: count for level in levels}   # how many more each level still needs
-        found = {level: [] for level in levels}
-
-        # every puzzle gets its own seed so it can be made again
-        for _ in range(max_tries):
-            if not any(wanted.values()):
-                break
-            random.seed(seed)
-            result = generate_puzzle(rows, cols, liars)
-            if result is not None:
-                grid, world = result
-                steps = solve(grid)
-                level = rate(steps, rows, cols)
-                if level is not None and LEVELS.index(level) < LEVELS.index(TRICK_MIN_LEVEL) and has_trick_clue(grid):
-                    level = None   # a trick clue in an easy or medium puzzle: skip this one
-                if level is not None and not two_clue_steps_come_late(steps, rows, cols):
-                    level = None   # a 2-clue step too early: skip this one
-                if wanted.get(level, 0) > 0:   # None (stuck or skipped) is never wanted
-                    # the easiest level of each size starts with the cat its only opener finds
-                    given = revealed_cat(steps) if level == levels[0] else None
-                    found[level].append(puzzle_to_dict(grid, world, seed, level, given))
-                    wanted[level] -= 1
-            seed += 1
-
-        for level in levels:
-            puzzles.extend(found[level])
-            if wanted[level]:
-                print(f"Only found {len(found[level])} {level} {rows}x{cols} puzzles, wanted {count}")
+        for level in levels_for(rows, cols):
+            made = 0
+            # every puzzle gets its own seed so it can be made again (see make_puzzle)
+            for _ in range(max_tries):
+                if made == count:
+                    break
+                seed += 1
+                result = make_puzzle(rows, cols, level, seed)
+                if result is None:
+                    continue
+                grid, world, _steps, given = result
+                given_cat = next(iter(given)) if given else None
+                puzzles.append(puzzle_to_dict(grid, world, seed, level, given_cat))
+                made += 1
+            if made < count:
+                print(f"Only found {made} {level} {rows}x{cols} puzzles, wanted {count}")
 
     with open(path, "w", encoding="utf-8") as f:
         f.write("// Made by export.py, don't edit by hand\n")

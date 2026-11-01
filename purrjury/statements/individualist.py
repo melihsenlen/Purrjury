@@ -19,7 +19,7 @@ class Individualist(Statement):
         return ("individualist",)
 
     def mood(self):
-        return "happy" # :)
+        return "angry" # >(
 
     def set_text(self, grid):
         self.text = random.choice(texts.INDIVIDUALIST)

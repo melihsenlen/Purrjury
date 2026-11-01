@@ -13,10 +13,17 @@ No negative wordings (not, none, can't, at most, ...): when a liar says one, the
 would have to un-negate twice.
 """
 
+INDIVIDUALIST = [
+    "I'm telling the truth!",
+    "I'm righteous!",
+    "I'm honest.",
+]
+
 # --- Cat sounds ---
 # The generator puts one before or after some clues (see add_cat_sounds in generator.py).
 # The mood comes from what the clue says ("X is a liar" is angry), never from whether the speaker
 # is really honest, so a sound never gives anything away.
+
 
 CAT_SOUNDS = {
     "happy": ["Purr.", "Prrrt!", "Mrrp!"],

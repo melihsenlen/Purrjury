@@ -182,5 +182,4 @@ def test_every_statement_type_has_its_own_kind(statement_type):
         world = make_world(9, 3)
         s = statement_type.random(0, grid, world)
         if s is not None:
-            assert s.kind() in {"is", "count", "total", "pair", "either_or", "only", "all_same",
-                                "compare", "odd", "next_to"}
+            assert s.kind() in {"is", "count", "total", "pair", "either_or", "only", "all_same", "compare", "odd", "next_to", "individualist"}

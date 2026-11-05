@@ -91,10 +91,12 @@ def test_only_easy_puzzles_show_a_cat(tmp_path):
 
 
 def test_exported_puzzles_have_one_answer(tmp_path):
+    """One answer that fits every clue and the cat shown from the start (easy puzzles may need that cat)."""
     puzzles = export([(3, 3)], count=1, path=str(tmp_path / "p.js"), first_seed=31)
     for p in puzzles:
-        grid, world, _steps, _given = make_puzzle(3, 3, p["level"], p["seed"])
-        assert find_solutions(grid) == [tuple(world)]
+        grid, world, _steps, given = make_puzzle(3, 3, p["level"], p["seed"])
+        answers = [w for w in find_solutions(grid) if all(w[cat] == value for cat, value in given.items())]
+        assert answers == [tuple(world)]
 
 
 def test_liar_count_varies_but_never_all_or_none():

@@ -10,6 +10,8 @@ from purrjury.statements.next_to import NextToEachOther
 from purrjury.statements.individualist import Individualist
 
 # Every statement type the generator can pick from. Add new types here.
-ALL_STATEMENTS = [CountLiars, PairStatement, Only, AllSame, IfThen, Compare, OddLiars, NextToEachOther, Individualist]
+# Individualist ("I'm honest.") is left out for now: it never helps, so it only fits as a filler, and that only
+# happens in easy puzzles, where it's a trap for beginners. The plan is to bring it back for hard puzzles only.
+ALL_STATEMENTS = [CountLiars, PairStatement, Only, AllSame, IfThen, Compare, OddLiars, NextToEachOther]
 
 # Hearsay isn't in the list on purpose: it needs a hidden cat, so the generator adds it separately

@@ -62,7 +62,9 @@
   </footer>
 
   <script>
-    document.write(`<script src="puzzles.js?v=${VERSION}"><\/script>`);
+    // index.html?set=feedback plays the feedback set (feedback_puzzles.js) instead of the normal puzzles
+    const PUZZLE_FILE = new URLSearchParams(location.search).get("set") === "feedback" ? "feedback_puzzles.js" : "puzzles.js";
+    document.write(`<script src="${PUZZLE_FILE}?v=${VERSION}"><\/script>`);
     document.write(`<script src="tutorial.js?v=${VERSION}"><\/script>`);
     document.write(`<script src="game.js?v=${VERSION}"><\/script>`);
   </script>

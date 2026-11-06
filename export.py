@@ -159,10 +159,12 @@ def main():
                         help="grid sizes, e.g. 3x3 4x4 (default: 3x3 4x4)")
     parser.add_argument("-n", "--count", type=int, default=5, help="puzzles per level for every size (default: 5)")
     parser.add_argument("-s", "--seed", type=int, help="first seed (default: random)")
+    parser.add_argument("-p", "--path", default="web/puzzles.js",
+                        help="where to save them (default: web/puzzles.js; the feedback set is web/feedback_puzzles.js)")
     args = parser.parse_args()
 
-    puzzles = export(args.sizes, args.count, first_seed=args.seed)
-    print(f"Saved {len(puzzles)} puzzles to web/puzzles.js")
+    puzzles = export(args.sizes, args.count, path=args.path, first_seed=args.seed)
+    print(f"Saved {len(puzzles)} puzzles to {args.path}")
 
 
 if __name__ == "__main__":

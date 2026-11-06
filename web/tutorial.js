@@ -444,7 +444,7 @@ const LESSONS = [
    }
   ],
   "off": "Something doesn't add up. Press Next step to find it.",
-  "done": "You solved a whole puzzle! Pick a level in the menu to keep going.",
+  "done": "You solved a whole puzzle!",
   "puzzle": {
    "rows": 3,
    "cols": 3,

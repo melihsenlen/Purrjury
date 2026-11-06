@@ -18,8 +18,10 @@ from purrjury.statements import CountLiars, Only, PairStatement
 # Lessons 4 and 5 only use the clues a beginner reads at a glance
 SIMPLE_CLUES = (CountLiars, PairStatement, Only)
 
-# One way through: one cat per clue, one working clue at a time, and no easier ending
-STRICT = PathSettings(max_cats_per_step=1, max_choices=1, endgame=1.0, openers=1, given=True, clue_types=SIMPLE_CLUES)
+# One way through: one cat per clue, one working clue at a time, and no easier ending.
+# shown_first=False keeps lessons 4 and 5 as they were made (their seeds and texts were picked by hand)
+STRICT = PathSettings(max_cats_per_step=1, max_choices=1, endgame=1.0, openers=1, given=True,
+                      shown_first=False, clue_types=SIMPLE_CLUES)
 
 # Lessons 4 and 5 try seeds from here until one works, so every run makes the same lessons.
 # 1434 is the first seed from 500 on that gives lesson 5 (the search took 4 minutes, so it starts there now)
@@ -180,7 +182,8 @@ def lesson_your_turn():
         "steps": walk,
         # no feedback on single marks here, only this once every cat is marked and the lesson isn't solved
         "off": "Something doesn't add up. Press Next step to find it.",
-        "done": "You solved a whole puzzle! Pick a level in the menu to keep going.",
+        # short, so it fits on one line with the "Back to the menu" button (the bubble keeps room for it)
+        "done": "You solved a whole puzzle!",
     }, seed
 
 

@@ -64,6 +64,15 @@ def test_given_cat_is_shown_with_its_real_type():
     assert solve(grid, given) == steps
 
 
+@pytest.mark.parametrize("rows, cols, seed", [(3, 3, 0), (3, 3, 1), (3, 3, 2), (4, 4, 3)])
+def test_shown_cats_own_clue_finds_a_cat_right_away(rows, cols, seed):
+    """A new player reads the shown cat's clue first, so with only that cat known, its clue already finds another."""
+    grid, world, _steps, given = make(rows, cols, PathSettings(given=True, max_cats_per_step=2), seed)
+    (cat, _is_liar), = given.items()
+    found = forced_cats([grid[cat // cols][cat % cols].statement], given, grid)
+    assert found and all(world[c] == value for c, value in found.items())
+
+
 @pytest.mark.parametrize("rows, cols, seed", [(3, 3, 5), (3, 3, 6), (4, 4, 7)])
 def test_clue_mix_keeps_every_kind_within_its_share(rows, cols, seed):
     grid, _world, _steps, _given = make(rows, cols, PathSettings(openers=2), seed)

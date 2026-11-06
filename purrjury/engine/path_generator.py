@@ -46,6 +46,7 @@ class PathSettings:
     endgame: float = 0.75         # once this share of the grid is solved, the two limits above are off
     openers: int = 1              # the most clues allowed to work with nothing known
     given: bool = False           # easy puzzles: the first cat on the path is shown from the start
+    shown_first: bool = True      # with a shown cat: its own clue is the first step (off: any clue may be)
     tries_per_step: int = 300     # random statements to try before giving up on a step
     clue_types: tuple = None      # the statement types to use, None for all of them (ALL_STATEMENTS)
 
@@ -132,6 +133,9 @@ def build_along_path(grid, world, path, settings, plan):
     known holds the true answer for the cats found so far, just like in the solver.
     Each step first tries to reveal the next cat on the path; if no clue does that, it accepts a clue
     that reveals any one new cat. Either way, every step reveals exactly one cat.
+
+    With a cat shown from the start (settings.given), the first step is that cat's own clue: a new player
+    reads the shown cat's clue first, so it should lead straight to the next cat.
     """
     known = {path[0]: world[path[0]]} if settings.given else {}
     openers = 0   # clues so far that work with nothing known
@@ -140,8 +144,10 @@ def build_along_path(grid, world, path, settings, plan):
         plan.next_step(known)
         target = next(cat for cat in path if cat not in known)
         may_open = openers < settings.openers   # may this clue work with nothing known?
-        statement = (find_clue_for_step(grid, world, known, target, may_open, settings, plan)
-                     or find_clue_for_step(grid, world, known, None, may_open, settings, plan))
+        first_step = settings.given and settings.shown_first and len(known) == 1
+        speakers = [path[0]] if first_step else None   # the shown cat goes first
+        statement = (find_clue_for_step(grid, world, known, target, may_open, settings, plan, speakers)
+                     or find_clue_for_step(grid, world, known, None, may_open, settings, plan, speakers))
         if statement is None:
             return False   # no clue reveals one new cat, give up on this grid
         get_cat(grid, statement.speaker).statement = statement
@@ -152,19 +158,20 @@ def build_along_path(grid, world, path, settings, plan):
     return True
 
 
-def find_clue_for_step(grid, world, known, target, may_open, settings, plan):
+def find_clue_for_step(grid, world, known, target, may_open, settings, plan, speakers=None):
     """A statement that, with the known cats, reveals exactly one new cat. None if none found.
 
     known:    dict {cat index: True if liar}, the cats found so far
     target:   the cat it should reveal, or None for "any one cat"
     may_open: False when the openers are used up: then the clue must reveal nothing on its own
     plan:     the steps so far, the clue must keep all of them within the limits
+    speakers: the cats that may say it, or None for any cat that doesn't have a clue yet
 
     Tries random speakers that don't have a clue yet, with random statement types.
     statement_type.random(speaker, grid, world) already makes a statement that fits the speaker
     (true if it's honest, false if it's a liar).
     """
-    free = [cat.index for row in grid for cat in row if cat.statement is None]
+    free = speakers or [cat.index for row in grid for cat in row if cat.statement is None]
     used = used_keys(grid)
     for _ in range(settings.tries_per_step):
         speaker = random.choice(free)
